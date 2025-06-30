@@ -8,11 +8,13 @@ flask = "*"
 flask-sqlalchemy = "*"
 flask-restful = "*"
 flask-bcrypt = "*"
-flask-jwt-extended = "*"
 python-dotenv = "*"
 sqlalchemy-serializer = "*"
 flask-migrate = "*"
 flask-cors = "*"
+flask-jwt-extended = "*"
+gunicorn = "*"
+psycopg2-binary = "*"
 
 [dev-packages]
 

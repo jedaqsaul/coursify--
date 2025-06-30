@@ -3,6 +3,7 @@ from flask import request
 from models import db, User
 from werkzeug.security import generate_password_hash
 from sqlalchemy.exc import SQLAlchemyError
+from flask_jwt_extended import jwt_required, get_jwt_identity
 
 
 class UserList(Resource):
@@ -45,47 +46,51 @@ class UserList(Resource):
 
 
 class UserById(Resource):
+    @jwt_required()
     def get(self, user_id):
-        try:
-            user = User.query.get(user_id)
-            if not user:
-                return {"error": "User not found"}, 404
-            return user.to_dict(), 200
-        except Exception as e:
-            return {"error": f"Failed to fetch user: {str(e)}"}, 500
+        current_user_id = get_jwt_identity()
+        if user_id != current_user_id:
+            return {"error": "Unauthorized access."}, 403
 
+        user = User.query.get(user_id)
+        if not user:
+            return {"error": "User not found"}, 404
+        return user.to_dict(), 200
+
+    @jwt_required()
     def patch(self, user_id):
-        try:
-            user = User.query.get(user_id)
-            if not user:
-                return {"error": "User not found"}, 404
+        current_user_id = get_jwt_identity()
+        if user_id != current_user_id:
+            return {"error": "Unauthorized access."}, 403
 
-            data = request.get_json()
-            for field in ['first_name', 'last_name', 'age', 'gender', 'email', 'role']:
-                if field in data:
-                    setattr(user, field, data[field])
+        user = User.query.get(user_id)
+        if not user:
+            return {"error": "User not found"}, 404
 
-            if 'password' in data:
-                user.password_hash = generate_password_hash(data['password'])
+        data = request.get_json()
+        for field in ['first_name', 'last_name', 'age', 'gender', 'email', 'role']:
+            if field in data:
+                setattr(user, field, data[field])
 
-            db.session.commit()
-            return user.to_dict(), 200
-        except Exception as e:
-            db.session.rollback()
-            return {"error": f"Failed to update user: {str(e)}"}, 500
+        if 'password' in data:
+            user.set_password(data['password'])
 
+        db.session.commit()
+        return user.to_dict(), 200
+
+    @jwt_required()
     def delete(self, user_id):
-        try:
-            user = User.query.get(user_id)
-            if not user:
-                return {"error": "User not found"}, 404
+        current_user_id = get_jwt_identity()
+        if user_id != current_user_id:
+            return {"error": "Unauthorized access."}, 403
 
-            db.session.delete(user)
-            db.session.commit()
-            return {"message": f"User with id {user_id} has been deleted"}, 200
-        except Exception as e:
-            db.session.rollback()
-            return {"error": f"Failed to delete user: {str(e)}"}, 500
+        user = User.query.get(user_id)
+        if not user:
+            return {"error": "User not found"}, 404
+
+        db.session.delete(user)
+        db.session.commit()
+        return {"message": f"User with id {user_id} has been deleted"}, 200
 
 
 

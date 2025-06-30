@@ -81,8 +81,19 @@ class UpdateEnrollment(Resource):
             db.session.rollback()
             return make_response({"error": "Failed to update enrollment", "details": str(e)}, 500)
 
+class AllEnrollments(Resource):
+    def get(self):
+        try:
+            enrollments = Enrollment.query.all()
+            return make_response({
+                "enrollments": [e.to_dict() for e in enrollments]
+            }, 200)
+        except Exception as e:
+            return make_response({"error": "Failed to fetch enrollments", "details": str(e)}, 500)
+
 
 def register_enrollment_routes(api):
     api.add_resource(EnrollUser, '/enrollments')
     api.add_resource(UserEnrollments, '/enrollments/<int:user_id>')
     api.add_resource(UpdateEnrollment, '/enrollments/<int:enrollment_id>')
+    api.add_resource(AllEnrollments, '/enrollments/all')
